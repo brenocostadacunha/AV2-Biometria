@@ -1,0 +1,10 @@
+Biometria  | Banco de Dados  | Imagem Correspondente     | Similaridade
+---------- | --------------- | ------------------------- | ------------
+file1.txt  | BD1             | BD1\108_7.tif             | 100.00%
+file2.txt  | BD1             | BD1\101_1.tif             | 100.00%
+file4.txt  | BD2             | BD2\101_4.tif             | 100.00%
+file8.txt  | BD4             | BD4\104_2.tif             | 100.00%
+file7.txt  | BD4             | BD4\110_8.tif             | 100.00%
+file3.txt  | BD2             | BD2\107_8.tif             | 100.00%
+file5.txt  | BD3             | BD3\107_2.tif             | 100.00%
+file6.txt  | BD3             | BD3\102_3.tif             | 100.00%

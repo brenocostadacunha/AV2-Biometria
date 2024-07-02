@@ -1,16 +1,10 @@
-# -*- coding: utf-8 -*-
 import cv2
 import numpy as np
 import os
 import time
-
-
-print("")
-print("\033[1;32mDemora um pouco msm 😥...\033[m")
-print("")
+import concurrent.futures
 
 def carregar_descritores_arquivo(caminho_arquivo):
-    """Carrega descritores SIFT de um arquivo .txt."""
     try:
         with open(caminho_arquivo, 'r') as arquivo_txt:
             linhas = arquivo_txt.readlines()
@@ -47,7 +41,27 @@ def encontrar_melhor_correspondencia_por_banco(descritores_biometria, pasta_base
 
     return melhor_similaridade, melhor_caminho_imagem, melhor_porcentagem
 
-# Pastas 
+def processar_biometria(nome_arquivo_biometria, pastas_bases_dados):
+    caminho_biometria = os.path.join("Banco", "biometria", nome_arquivo_biometria)
+    descritores_biometria = carregar_descritores_arquivo(caminho_biometria)
+    if descritores_biometria is not None:
+        melhor_resultado = None
+        for pasta_base in pastas_bases_dados:
+            melhor_similaridade, melhor_caminho_imagem, melhor_porcentagem = encontrar_melhor_correspondencia_por_banco(
+                descritores_biometria, pasta_base
+            )
+            if melhor_caminho_imagem:
+                resultado = (
+                    f"{nome_arquivo_biometria:<10} | {pasta_base.split('/')[1]:<15} | "
+                    f"{melhor_caminho_imagem.split('/')[1]:<25} | {melhor_porcentagem:>.2f}%"
+                )
+                if melhor_resultado is None or melhor_similaridade > melhor_resultado[0]:
+                    melhor_resultado = (melhor_similaridade, resultado)
+        if melhor_resultado:
+            return melhor_resultado[1]
+    return None
+
+ 
 pastas_bases_dados = [
     'Banco/BD1',
     'Banco/BD2',
@@ -55,34 +69,36 @@ pastas_bases_dados = [
     'Banco/BD4'
 ]
 
-# Registrar o tempo de início
+ 
 inicio = time.time()
 
-# Header da tabela
-print(f"\033[40m \033[34m{'Biometria':<10}|{'Banco de Dados':<15}  |   {'Imagem Correspondente':<25}|Similaridade\033[m")
-print(f"{'-'*10} | {'-'*15} | {'-'*25} | {'-'*12}\033[m")
+ 
+header = f"{'Biometria':<10} | {'Banco de Dados':<15} | {'Imagem Correspondente':<25} | Similaridade"
+separador = f"{'-'*10} | {'-'*15} | {'-'*25} | {'-'*12}"
+print(header)
+print(separador)
 
-# Processa os 8 arquivos de biometria
-for i in range(1, 9):
-    nome_arquivo_biometria = f"file{i}.txt"
-    caminho_biometria = os.path.join("Banco", "biometria8", nome_arquivo_biometria)
+ 
+resultados_finais = []
 
-    descritores_biometria = carregar_descritores_arquivo(caminho_biometria)
-    if descritores_biometria is not None:
-        for pasta_base in pastas_bases_dados:
-            melhor_similaridade, melhor_caminho_imagem, melhor_porcentagem = encontrar_melhor_correspondencia_por_banco(
-                descritores_biometria, pasta_base
-            )
-            if melhor_caminho_imagem:
-                print(
-                    f"\033[32m{nome_arquivo_biometria:<10} | {pasta_base.split('/')[1]:<15} | {melhor_caminho_imagem.split('/')[1]:<25} | {melhor_porcentagem:>.2f}%"
-                )
-            else:
-                print(f"\033[32m{nome_arquivo_biometria:<10} | {pasta_base.split('/')[1]:<15} | {'Nenhuma correspondência encontrada':<25} | {0.00:>.2f}%")
+ 
+with concurrent.futures.ThreadPoolExecutor() as executor:
+    futures = [executor.submit(processar_biometria, f"file{i}.txt", pastas_bases_dados) for i in range(1, 9)]
+    for future in concurrent.futures.as_completed(futures):
+        resultado = future.result()
+        if resultado:
+            resultados_finais.append(resultado)
+            print(resultado)
+    print(separador)
 
-    print("-" * 60)
+ 
+with open('resultados_biometria.txt', 'w') as arquivo:
+    arquivo.write(header + "\n")
+    arquivo.write(separador + "\n")
+    for resultado in resultados_finais:
+        arquivo.write(resultado + "\n")
 
-# Calcula e mostra o tempo total de execução
+ 
 fim = time.time()
 tempo_total = fim - inicio
 print(f"Tempo total de execução: {tempo_total:.2f} segundos")
